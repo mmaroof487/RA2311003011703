@@ -6,11 +6,10 @@ let expiresAt = 0;
 
 async function getToken() {
   const now = Date.now() / 1000;
-  
+
   if (cachedToken && now < expiresAt - 60) {
     return cachedToken;
   }
-
   const payload = {
     email: cfg.email,
     name: cfg.name,

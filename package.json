@@ -1,0 +1,14 @@
+{
+  "name": "RA2311003011703",
+  "version": "1.0.0",
+  "description": "Backend assessment solution",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd logging_middleware && npm install && cd ../vehicle_maintenance_scheduler && npm install && cd ../notification_app_be && npm install",
+    "start-scheduler": "cd vehicle_maintenance_scheduler && npm start",
+    "start-notifications": "cd notification_app_be && npm start"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}

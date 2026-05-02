@@ -10,19 +10,14 @@ npm run install-all
 
 This installs packages in the root, `logging_middleware/`, `vehicle_maintenance_scheduler/`, and `notification_app_be/`.
 
-Before running, fill in your credentials in `config.js`:
+Copy `.env.example` to `.env` and fill in your `CLIENT_SECRET`:
 
-```javascript
-module.exports = {
-  email: "your_email@example.com",
-  name: "Your Name",
-  rollNo: "RA...",
-  accessCode: "...",
-  clientID: "...",
-  clientSecret: "...",
-  base: "http://20.207.122.201/evaluation-service"
-};
+```bash
+cp .env.example .env
+# then set CLIENT_SECRET=<your_secret> in .env
 ```
+
+The server will throw immediately at startup if `CLIENT_SECRET` is missing.
 
 ## Structure
 
@@ -89,11 +84,6 @@ Server runs on http://localhost:3002
   curl http://localhost:3002/notifications/top/5
   ```
 
-- `GET /notifications/stream/5` — Stream-process top 5
-  ```bash
-  curl http://localhost:3002/notifications/stream/5
-  ```
-
 - `POST /notifications/refresh` — Refresh cache from API
   ```bash
   curl -X POST http://localhost:3002/notifications/refresh
@@ -111,7 +101,7 @@ Server runs on http://localhost:3002
 ### Notification Inbox
 
 - **Min-Heap:** Implemented from scratch (push/pop/peek/bubble-up/sink-down)
-- **Scoring:** `typeWeight × 1/(1 + hoursElapsed)` prioritizes recent high-impact notifications
+- **Scoring:** `score = typeWeight + recencyBonus` where `recencyBonus = 1/(1 + hoursElapsed + 0.01)` — additive, capped below 1 so a lower-priority type can never outscore a higher-priority one
 - **Space:** O(k) for heap of size k, not O(n) for full sort
 - **Time:** O(n log k) insertion vs O(n log n) sort
 - **Streaming:** Same algorithm applied as notifications arrive one-by-one

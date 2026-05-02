@@ -14,6 +14,7 @@ const startServer = async () => {
 		app.listen(PORT);
 	} catch (err) {
 		await Log("backend", "fatal", "service", "server error: " + err.message);
+		process.exit(1);
 	}
 };
 

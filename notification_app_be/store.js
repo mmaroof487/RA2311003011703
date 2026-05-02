@@ -20,7 +20,7 @@ async function refresh() {
 }
 
 function getAll() {
-  return notifications;
+  return [...notifications];
 }
 
 function byType(type) {

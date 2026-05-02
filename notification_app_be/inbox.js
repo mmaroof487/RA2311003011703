@@ -46,7 +46,7 @@ class MinHeap {
 function scoreNotification(notif) {
   const base = typeWeight[notif.Type] || 1;
   const ts = notif.Timestamp.replace(' ', 'T');
-  const hoursElapsed = (Date.now() - new Date(ts).getTime()) / 3600000;
+  const hoursElapsed = isNaN(new Date(ts).getTime()) ? 9999 : (Date.now() - new Date(ts)) / 3600000;
   const recencyBonus = 1 / (1 + hoursElapsed + 0.01); // range: (0, ~0.99]
   return base + recencyBonus;
 }

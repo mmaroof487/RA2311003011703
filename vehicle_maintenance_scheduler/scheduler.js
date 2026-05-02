@@ -27,16 +27,15 @@ function knapsack(tasks, budget) {
 
     // bad data in the API response — skip this task, don't let it corrupt the table
     if (!task.TaskID || typeof duration !== 'number' || duration <= 0
-        || typeof impact !== 'number' || impact < 0) {
-      Log('backend', 'warn', 'handler', `Task skipped: invalid data (idx ${i - 1})`).catch(() => {});
+      || typeof impact !== 'number' || impact < 0) {
+      Log('backend', 'warn', 'handler', `Task skipped: invalid data (idx ${i - 1})`).catch(() => { });
       for (let w = 0; w <= budget; w++) dp[i][w] = dp[i - 1][w];
       continue;
     }
 
     if (duration > budget) {
-      Log('backend', 'warn', 'handler', `Task ${task.TaskID}: duration>budget`).catch(() => {});
+      Log('backend', 'warn', 'handler', `Task ${task.TaskID}: duration>budget`).catch(() => { });
     }
-
     for (let w = 0; w <= budget; w++) {
       if (duration <= w) {
         dp[i][w] = Math.max(dp[i - 1][w], dp[i - 1][w - duration] + impact);
@@ -71,7 +70,6 @@ function knapsack(tasks, budget) {
 async function runForAllDepots(token) {
   try {
     await Log('backend', 'info', 'service', 'running knapsack for all depots');
-
     const depots = await fetchDepots(token);
     const vehicles = await fetchVehicles(token);
 
@@ -84,7 +82,7 @@ async function runForAllDepots(token) {
         totalDuration: result.totalDuration,
         totalImpact: result.totalImpact
       };
-      Log('backend', 'info', 'service', `Depot ${depotIndex}: impact ${result.totalImpact}`).catch(() => {});
+      Log('backend', 'info', 'service', `Depot ${depotIndex}: impact ${result.totalImpact}`).catch(() => { });
       return outcome;
     });
 

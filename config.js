@@ -9,3 +9,7 @@ module.exports = {
 	clientSecret: process.env.CLIENT_SECRET,
 	base: process.env.BASE_URL || "http://20.207.122.201/evaluation-service",
 };
+
+if (!module.exports.clientSecret) {
+  throw new Error('[config] CLIENT_SECRET is not set. Check your .env file.');
+}

@@ -25,18 +25,15 @@ function knapsack(tasks, budget) {
     const duration = task.Duration;
     const impact = task.Impact;
 
-    // Fix #5: skip tasks with invalid data
+    // bad data in the API response — skip this task, don't let it corrupt the table
     if (!task.TaskID || typeof duration !== 'number' || duration <= 0
         || typeof impact !== 'number' || impact < 0) {
-      // fire-and-forget: knapsack is sync, Log is async — attach .catch to suppress unhandled rejection
       Log('backend', 'warn', 'handler', `Task skipped: invalid data (idx ${i - 1})`).catch(() => {});
-      // copy previous row — task contributes nothing
       for (let w = 0; w <= budget; w++) dp[i][w] = dp[i - 1][w];
       continue;
     }
 
     if (duration > budget) {
-      // Fix #6: fire-and-forget with .catch to prevent unhandled rejection
       Log('backend', 'warn', 'handler', `Task ${task.TaskID}: duration>budget`).catch(() => {});
     }
 
@@ -73,7 +70,7 @@ function knapsack(tasks, budget) {
 
 async function runForAllDepots(token) {
   try {
-    await Log('backend', 'info', 'service', 'Starting knapsack computation for all depots');
+    await Log('backend', 'info', 'service', 'running knapsack for all depots');
 
     const depots = await fetchDepots(token);
     const vehicles = await fetchVehicles(token);

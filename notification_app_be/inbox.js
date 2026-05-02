@@ -39,10 +39,8 @@ class MinHeap {
   }
 }
 
-// Scoring: score = typeWeight + recencyBonus
-// typeWeight gap between tiers is 1 (Placement=3, Result=2, Event=1).
-// recencyBonus is capped at 0.99 (never >= 1), so a lower-priority type
-// can NEVER outscore a higher-priority type regardless of recency.
+// score = typeWeight + recencyBonus; recencyBonus < 1 always,
+// so a lower-priority type can never outscore a higher-priority one.
 function scoreNotification(notif) {
   const base = typeWeight[notif.Type] || 1;
   const ts = notif.Timestamp.replace(' ', 'T');

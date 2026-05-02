@@ -1,121 +1,81 @@
-# Backend Assessment Solution
+# RA2311003011703 — Backend Assessment
 
-## Installation
+## Setup
 
-Install dependencies across all modules:
+Install everything in one shot:
 
 ```bash
 npm run install-all
 ```
 
-This installs packages in the root, `logging_middleware/`, `vehicle_maintenance_scheduler/`, and `notification_app_be/`.
+This covers the root, `logging_middleware/`, `vehicle_maintenance_scheduler/`, and `notification_app_be/`.
 
-Copy `.env.example` to `.env` and fill in your `CLIENT_SECRET`:
+Next, copy `.env.example` to `.env` and set your `CLIENT_SECRET`:
 
 ```bash
 cp .env.example .env
-# then set CLIENT_SECRET=<your_secret> in .env
 ```
 
-The server will throw immediately at startup if `CLIENT_SECRET` is missing.
+The app will crash at startup with a clear message if `CLIENT_SECRET` is missing — intentional, so you can't accidentally run without credentials.
 
-## Structure
+## Project Layout
 
-- `config.js` — Centralized configuration with API credentials
-- `logging_middleware/` — Token caching and structured logging module
-  - `tokenStore.js` — Automatic token refresh with in-memory cache
-  - `logger.js` — Validated logging with support for stack, level, and package types
-- `vehicle_maintenance_scheduler/` — Vehicle task scheduling using knapsack DP
-  - `scheduler.js` — Pure knapsack algorithm and API client
-  - `routes.js` — REST endpoints for scheduling
-  - `index.js` — Express server (port 3001)
-- `notification_app_be/` — Priority notification inbox with min-heap
-  - `store.js` — In-memory notification cache
-  - `inbox.js` — Min-heap and priority scoring
-  - `routes.js` — REST endpoints
-  - `index.js` — Express server (port 3002)
-- `notification_system_design.md` — Complete design document (Stages 1-6)
+```
+config.js                     — shared config, reads from .env
+logging_middleware/
+  tokenStore.js               — fetches and caches the auth token (60s buffer before expiry)
+  logger.js                   — validates and sends logs to the external API
+vehicle_maintenance_scheduler/
+  scheduler.js                — knapsack DP + backtracking, plus API fetch helpers
+  routes.js                   — three GET endpoints
+  index.js                    — Express on port 3001
+notification_app_be/
+  store.js                    — in-memory notification cache, refreshed on demand
+  inbox.js                    — min-heap implementation and priority scoring
+  routes.js                   — three endpoints (list, top-N, refresh)
+  index.js                    — Express on port 3002
+notification_system_design.md — written design doc (Stages 1–6)
+```
 
 ## Running
 
-### Vehicle Maintenance Scheduler
-
+**Scheduler** (port 3001):
 ```bash
 npm run start-scheduler
 ```
 
-Server runs on http://localhost:3001
+| Endpoint | What it does |
+|---|---|
+| `GET /schedule/run` | Runs knapsack for every depot, returns selected tasks + totals |
+| `GET /schedule/depots` | Raw depot list from the API |
+| `GET /schedule/vehicles` | Raw vehicle/task list from the API |
 
-**Endpoints:**
-
-- `GET /schedule/run` — Execute knapsack for all depots
-  ```bash
-  curl http://localhost:3001/schedule/run
-  ```
-
-- `GET /schedule/depots` — List depot budgets
-  ```bash
-  curl http://localhost:3001/schedule/depots
-  ```
-
-- `GET /schedule/vehicles` — List all vehicle tasks
-  ```bash
-  curl http://localhost:3001/schedule/vehicles
-  ```
-
-### Notification App
-
+**Notifications** (port 3002):
 ```bash
 npm run start-notifications
 ```
 
-Server runs on http://localhost:3002
+| Endpoint | What it does |
+|---|---|
+| `GET /notifications` | All cached notifications; add `?type=Placement` to filter |
+| `GET /notifications/top/:n` | Top N by priority score, descending |
+| `POST /notifications/refresh` | Refetches from the external API, returns 204 |
 
-**Endpoints:**
+## How the scheduler works
 
-- `GET /notifications` — List all notifications (supports `?type=Placement` filter)
-  ```bash
-  curl http://localhost:3002/notifications
-  curl http://localhost:3002/notifications?type=Placement
-  ```
+Standard 0/1 knapsack with a bottom-up DP table. Each depot has a `MechanicHours` budget; the task list (vehicles) is shared across all depots. After filling the table, backtracking reconstructs which tasks were selected. Complexity is O(n × budget) per depot.
 
-- `GET /notifications/top/5` — Top 5 by priority score
-  ```bash
-  curl http://localhost:3002/notifications/top/5
-  ```
+Tasks with missing or zero `Duration`/`Impact` fields are skipped silently (with a warn log) and don't affect the result.
 
-- `POST /notifications/refresh` — Refresh cache from API
-  ```bash
-  curl -X POST http://localhost:3002/notifications/refresh
-  ```
+## How the notification ranking works
 
-## Key Implementation Details
+Each notification gets a score: `typeWeight + recencyBonus`, where `typeWeight` is 3 for Placement, 2 for Result, 1 for Event, and `recencyBonus = 1 / (1 + hoursElapsed + 0.01)`.
 
-### Vehicle Scheduler
+The bonus is always below 1, so a newer low-priority notification can never beat an older high-priority one. A min-heap of size N keeps the top-N as notifications are processed — O(n log k) instead of a full sort.
 
-- **Algorithm:** 0/1 Knapsack with bottom-up DP
-- **Complexity:** O(n × budget) where n = number of tasks, budget = total mechanic-hours
-- **Backtracking:** Reconstructs selected tasks from DP table
-- **Logging:** All operations logged via centralized `Log()` function
+## Notes
 
-### Notification Inbox
-
-- **Min-Heap:** Implemented from scratch (push/pop/peek/bubble-up/sink-down)
-- **Scoring:** `score = typeWeight + recencyBonus` where `recencyBonus = 1/(1 + hoursElapsed + 0.01)` — additive, capped below 1 so a lower-priority type can never outscore a higher-priority one
-- **Space:** O(k) for heap of size k, not O(n) for full sort
-- **Time:** O(n log k) insertion vs O(n log n) sort
-- **Streaming:** Same algorithm applied as notifications arrive one-by-one
-
-### Logging
-
-- **Centralized:** All `console.log` replaced with `Log(stack, level, package, message)`
-- **Validation:** Invalid parameters raise errors immediately
-- **Token Caching:** Automatic refresh before expiration
-
-## Testing Notes
-
-- Fill `config.js` with valid credentials before running
-- Token caching layer ensures efficient API reuse
-- All errors logged and propagated to routes with proper HTTP status codes
-- Empty lists return `[]`, not null or undefined
-# RA2311003011703
+- Credentials come from `.env` — see `.env.example` for the keys required
+- Token is cached in memory and refreshed 60 seconds before it expires, so repeated requests don't trigger extra auth calls
+- All routes return a JSON error body on failure with the appropriate HTTP status code
+- `getAll()` returns a copy of the internal array, so callers can't accidentally mutate the store

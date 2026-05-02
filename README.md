@@ -79,3 +79,24 @@ The bonus is always below 1, so a newer low-priority notification can never beat
 - Token is cached in memory and refreshed 60 seconds before it expires, so repeated requests don't trigger extra auth calls
 - All routes return a JSON error body on failure with the appropriate HTTP status code
 - `getAll()` returns a copy of the internal array, so callers can't accidentally mutate the store
+
+## Screenshots
+
+### GET /schedule/run
+<p align="center">
+  <img src="screenshots/schedule.png" width="45%"/>
+  &nbsp;&nbsp;
+  <img src="screenshots/schedule2.png" width="45%"/>
+</p>
+
+### GET /notifications/top/10
+<p align="center">
+  <img src="screenshots/notification.png" width="45%"/>
+  &nbsp;&nbsp;
+  <img src="screenshots/notification2.png" width="45%"/>
+</p>
+
+### POST /notifications/refresh
+<p align="center">
+  <img src="screenshots/refresh.png" width="60%"/>
+</p>
